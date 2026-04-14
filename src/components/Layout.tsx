@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Shield, Menu, X } from "lucide-react";
+import { Shield, Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,8 @@ const navItems = [
   { path: "/dashboard", label: "Dashboard" },
   { path: "/blocked", label: "Blocked Sites" },
   { path: "/logs", label: "Logs" },
+  { path: "/admin", label: "Admin" },
+  { path: "/extension", label: "Extension" },
   { path: "/about", label: "About" },
 ];
 
@@ -18,7 +20,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Nav */}
       <header className="fixed top-0 inset-x-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2.5 group">
@@ -28,17 +29,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="font-display font-bold text-lg text-gradient-primary">SecureSurf</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => {
               const active = location.pathname === item.path;
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   {item.label}
@@ -47,9 +46,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <button className="md:hidden p-2 text-muted-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to="/login" className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition">
+              <LogIn className="w-4 h-4" /> Sign In
+            </Link>
+            <button className="lg:hidden p-2 text-muted-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -58,7 +62,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden border-t border-border/50 bg-background overflow-hidden"
+              className="lg:hidden border-t border-border/50 bg-background overflow-hidden"
             >
               <div className="container py-3 flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -67,14 +71,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
                     className={`px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      location.pathname === item.path
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground"
+                      location.pathname === item.path ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {item.label}
                   </Link>
                 ))}
+                <Link to="/login" onClick={() => setMobileOpen(false)} className="px-3.5 py-2.5 rounded-lg text-sm font-medium text-primary">
+                  Sign In
+                </Link>
               </div>
             </motion.div>
           )}

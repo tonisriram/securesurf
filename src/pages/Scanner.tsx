@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Search, Shield, Globe, Lock, AlertTriangle, CheckCircle, XCircle, Brain, Server, FileText, ExternalLink } from "lucide-react";
+import { Search, Shield, Globe, Lock, AlertTriangle, CheckCircle, XCircle, Brain, Server, FileText, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ThreatGauge from "@/components/ThreatGauge";
+import ScoreBreakdown from "@/components/ScoreBreakdown";
 import { generateMockScanResult, type ScanResult } from "@/lib/heuristics";
+import { generateScanReport } from "@/lib/generateReport";
 
 const demoUrls = [
   { url: "https://google.com", label: "Safe" },
@@ -20,7 +22,6 @@ export default function Scanner() {
     if (!scanUrl.trim()) return;
     setResult(null);
     setScanning(true);
-    // Simulate processing
     await new Promise((r) => setTimeout(r, 1800));
     setResult(generateMockScanResult(scanUrl));
     setScanning(false);
@@ -100,6 +101,12 @@ export default function Scanner() {
                 })()}
               </div>
               <p className="text-xs text-muted-foreground mt-3 font-mono break-all">{result.url}</p>
+              <button
+                onClick={() => generateScanReport(result)}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-sm font-medium hover:bg-secondary/80 border border-border transition"
+              >
+                <Download className="w-4 h-4" /> Download PDF Report
+              </button>
             </div>
 
             {/* AI Explanation */}
@@ -111,6 +118,9 @@ export default function Scanner() {
               <p className="text-sm text-muted-foreground leading-relaxed mb-3">{result.aiExplanation}</p>
               <p className="text-sm font-semibold">{result.aiRecommendation}</p>
             </div>
+
+            {/* Score Breakdown */}
+            <ScoreBreakdown result={result} />
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Heuristic Analysis */}
