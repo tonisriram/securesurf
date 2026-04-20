@@ -30,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/scanner" element={<Scanner />} />
+            <Route path="/bulk" element={<BulkScan />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/blocked" element={<BlockedSites />} />
             <Route path="/logs" element={<Logs />} />
