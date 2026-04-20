@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      scan_history: {
+        Row: {
+          ai_used: boolean | null
+          category: string | null
+          created_at: string
+          explanation: string | null
+          id: string
+          score: number
+          signals: Json | null
+          status: string
+          url: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_used?: boolean | null
+          category?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          score: number
+          signals?: Json | null
+          status: string
+          url: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_used?: boolean | null
+          category?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          score?: number
+          signals?: Json | null
+          status?: string
+          url?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const navItems = [
   { path: "/", label: "Home" },
   { path: "/scanner", label: "Scanner" },
+  { path: "/bulk", label: "Bulk Scan" },
   { path: "/dashboard", label: "Dashboard" },
   { path: "/blocked", label: "Blocked Sites" },
   { path: "/logs", label: "Logs" },
