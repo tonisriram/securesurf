@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Search, Shield, Globe, Lock, AlertTriangle, CheckCircle, XCircle, Brain, Server, FileText, Download } from "lucide-react";
+import { Search, Shield, Globe, Lock, AlertTriangle, CheckCircle, XCircle, Brain, Server, FileText, Download, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 import ThreatGauge from "@/components/ThreatGauge";
 import ScoreBreakdown from "@/components/ScoreBreakdown";
 import { generateMockScanResult, type ScanResult } from "@/lib/heuristics";
 import { generateScanReport } from "@/lib/generateReport";
+import { supabase } from "@/integrations/supabase/client";
 
 const demoUrls = [
   { url: "https://google.com", label: "Safe" },
@@ -22,9 +24,46 @@ export default function Scanner() {
     if (!scanUrl.trim()) return;
     setResult(null);
     setScanning(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setResult(generateMockScanResult(scanUrl));
-    setScanning(false);
+
+    // Build local heuristic + mock infrastructure result first
+    const baseResult = generateMockScanResult(scanUrl);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("scan-url", {
+        body: { url: scanUrl },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Merge AI assessment with heuristic/mock data (AI takes priority on score + explanation)
+      const merged: ScanResult = {
+        ...baseResult,
+        threatScore: data.threatScore ?? baseResult.threatScore,
+        status: data.status ?? baseResult.status,
+        aiExplanation: data.explanation ?? baseResult.aiExplanation,
+        aiRecommendation: data.recommendation ?? baseResult.aiRecommendation,
+        heuristics: [
+          ...baseResult.heuristics,
+          ...(data.detectedSignals ?? []).map((s: string) => ({
+            name: s,
+            description: `AI-detected signal (${data.category})`,
+            severity:
+              data.status === "danger" ? ("danger" as const) : data.status === "warning" ? ("warning" as const) : ("safe" as const),
+            score: 0,
+          })),
+        ],
+      };
+      setResult(merged);
+    } catch (err: any) {
+      console.error("AI scan failed:", err);
+      toast.error("AI scan unavailable — showing heuristic-only results", {
+        description: err?.message ?? "Edge function error",
+      });
+      setResult(baseResult);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const statusConfig = {
@@ -38,6 +77,9 @@ export default function Scanner() {
       <div className="text-center mb-10">
         <h1 className="text-3xl font-display font-bold mb-2">URL Scanner</h1>
         <p className="text-muted-foreground">Enter a URL to analyze for threats</p>
+        <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+          <Sparkles className="w-3 h-3" /> Powered by Gemini AI
+        </div>
       </div>
 
       {/* Search */}
@@ -78,7 +120,7 @@ export default function Scanner() {
         {scanning && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-16">
             <div className="w-20 h-20 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-6" />
-            <p className="text-muted-foreground animate-pulse">Analyzing URL across multiple threat databases...</p>
+            <p className="text-muted-foreground animate-pulse">Gemini AI is analyzing the URL across multiple threat signals...</p>
           </motion.div>
         )}
       </AnimatePresence>
