@@ -62,6 +62,23 @@ export default function Scanner() {
         ],
       };
       setResult(merged);
+
+      // Persist to scan_history (anon = null user_id)
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        await supabase.from("scan_history").insert({
+          user_id: auth.user?.id ?? null,
+          url: scanUrl,
+          score: data.score ?? merged.threatScore,
+          status: data.status ?? merged.status,
+          category: data.category ?? null,
+          explanation: data.explanation ?? merged.aiExplanation,
+          signals: data.signals ?? [],
+          ai_used: data.ai_used ?? false,
+        });
+      } catch (logErr) {
+        console.warn("Could not save scan to history", logErr);
+      }
     } catch (err: any) {
       console.error("AI scan failed:", err);
       toast.error("AI scan unavailable — showing heuristic-only results", {
