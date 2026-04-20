@@ -37,15 +37,22 @@ export default function Scanner() {
       if (data?.error) throw new Error(data.error);
 
       // Merge AI assessment with heuristic/mock data (AI takes priority on score + explanation)
+      const recommendationFor = (status: string) =>
+        status === "safe"
+          ? "✅ Safe to visit — no threats detected."
+          : status === "warning"
+          ? "⚠️ Proceed with caution — avoid entering sensitive data."
+          : "🚫 Block immediately — do not visit this website.";
+
       const merged: ScanResult = {
         ...baseResult,
-        threatScore: data.threatScore ?? baseResult.threatScore,
+        threatScore: data.score ?? baseResult.threatScore,
         status: data.status ?? baseResult.status,
         aiExplanation: data.explanation ?? baseResult.aiExplanation,
-        aiRecommendation: data.recommendation ?? baseResult.aiRecommendation,
+        aiRecommendation: recommendationFor(data.status ?? baseResult.status),
         heuristics: [
           ...baseResult.heuristics,
-          ...(data.detectedSignals ?? []).map((s: string) => ({
+          ...(data.signals ?? []).map((s: string) => ({
             name: s,
             description: `AI-detected signal (${data.category})`,
             severity:
