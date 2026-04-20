@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "@/components/Layout";
 import Landing from "@/pages/Landing";
 import Scanner from "@/pages/Scanner";
+import BulkScan from "@/pages/BulkScan";
 import Dashboard from "@/pages/Dashboard";
 import BlockedSites from "@/pages/BlockedSites";
 import Logs from "@/pages/Logs";
