@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Shield, Mail, ArrowLeft, KeyRound } from "lucide-react";
+import { Mail, ArrowLeft, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -15,15 +15,16 @@ export default function ForgotPassword() {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSent(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setLoading(false);
-    toast({ title: "Demo Mode", description: "Password reset requires Lovable Cloud." });
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({ title: "Demo Mode", description: "OTP verification requires Lovable Cloud." });
+    if (error) {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    setSent(true);
+    toast({ title: "Check your email", description: "We sent a password reset link." });
   };
 
   return (
