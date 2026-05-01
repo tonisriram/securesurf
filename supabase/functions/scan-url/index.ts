@@ -70,6 +70,53 @@ Deno.serve(async (req) => {
     const url = validation.url;
     const heuristic = heuristicCheck(url);
 
+    // Google Safe Browsing lookup (authoritative threat intel)
+    let safeBrowsing: { listed: boolean; threats: string[] } = { listed: false, threats: [] };
+    let safeBrowsingFailed = false;
+    try {
+      const GSB_KEY = Deno.env.get("GOOGLE_SAFE_BROWSING_API_KEY");
+      if (!GSB_KEY) throw new Error("Missing Safe Browsing key");
+
+      const gsbRes = await fetch(
+        `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GSB_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client: { clientId: "secure-surf", clientVersion: "1.0.0" },
+            threatInfo: {
+              threatTypes: [
+                "MALWARE",
+                "SOCIAL_ENGINEERING",
+                "UNWANTED_SOFTWARE",
+                "POTENTIALLY_HARMFUL_APPLICATION",
+              ],
+              platformTypes: ["ANY_PLATFORM"],
+              threatEntryTypes: ["URL"],
+              threatEntries: [{ url }],
+            },
+          }),
+        },
+      );
+
+      if (!gsbRes.ok) {
+        const errText = await gsbRes.text();
+        console.error("Safe Browsing error", gsbRes.status, errText);
+        throw new Error(`Safe Browsing ${gsbRes.status}`);
+      }
+      const gsbData = await gsbRes.json();
+      const matches = gsbData?.matches ?? [];
+      if (matches.length > 0) {
+        safeBrowsing.listed = true;
+        safeBrowsing.threats = [
+          ...new Set(matches.map((m: any) => String(m.threatType))),
+        ];
+      }
+    } catch (err) {
+      console.log("Safe Browsing failed:", err);
+      safeBrowsingFailed = true;
+    }
+
     // Gemini AI call
     let aiResult: { score: number; category: string; explanation: string; signals: string[] } | null = null;
     let aiFailed = false;
@@ -120,7 +167,7 @@ Deno.serve(async (req) => {
       aiFailed = true;
     }
 
-    // Merge
+    // Merge: Safe Browsing is authoritative — if Google lists it, force danger.
     let finalScore = heuristic.score;
     let category = "safe";
     let explanation = "No major threats detected";
@@ -136,14 +183,41 @@ Deno.serve(async (req) => {
       else if (finalScore > 30) category = "suspicious";
     }
 
+    if (safeBrowsing.listed) {
+      finalScore = 100;
+      const threatMap: Record<string, string> = {
+        MALWARE: "malware",
+        SOCIAL_ENGINEERING: "phishing",
+        UNWANTED_SOFTWARE: "suspicious",
+        POTENTIALLY_HARMFUL_APPLICATION: "malware",
+      };
+      category = threatMap[safeBrowsing.threats[0]] ?? "malware";
+      explanation = `Google Safe Browsing has flagged this URL as ${safeBrowsing.threats
+        .map((t) => t.toLowerCase().replace(/_/g, " "))
+        .join(", ")}. ${explanation}`;
+      signals = [
+        ...new Set([
+          ...signals,
+          ...safeBrowsing.threats.map((t) => `Safe Browsing: ${t}`),
+        ]),
+      ];
+    }
+
+    const status = finalScore < 30 ? "safe" : finalScore < 60 ? "warning" : "danger";
+
     const result = {
       url,
       score: Math.min(100, finalScore),
-      status: finalScore < 30 ? "safe" : finalScore < 60 ? "warning" : "danger",
+      status,
       category,
       explanation,
       signals,
       ai_used: !aiFailed,
+      safe_browsing: {
+        checked: !safeBrowsingFailed,
+        listed: safeBrowsing.listed,
+        threats: safeBrowsing.threats,
+      },
       timestamp: new Date().toISOString(),
     };
 

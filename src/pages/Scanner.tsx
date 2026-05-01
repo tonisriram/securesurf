@@ -218,6 +218,25 @@ export default function Scanner() {
                   <h3 className="font-display font-semibold">API Intelligence</h3>
                 </div>
                 <div className="space-y-3">
+                  {(() => {
+                    const sb = (result as any).safe_browsing as
+                      | { checked: boolean; listed: boolean; threats: string[] }
+                      | undefined;
+                    const sbDetail = !sb || !sb.checked
+                      ? "Unavailable"
+                      : sb.listed
+                      ? sb.threats.join(", ")
+                      : "Clean";
+                    const sbFlagged = !!sb?.listed;
+                    return (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Google Safe Browsing</span>
+                        <span className={`text-xs ${sbFlagged ? "text-danger" : sb?.checked ? "text-safe" : "text-muted-foreground"}`}>
+                          {sbDetail}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {[
                     { name: "PhishTank", detail: result.apiIntel.phishTank.detail, flagged: result.apiIntel.phishTank.listed },
                     { name: "VirusTotal", detail: result.apiIntel.virusTotal.detail, flagged: result.apiIntel.virusTotal.positives > 3 },
