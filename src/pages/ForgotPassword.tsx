@@ -34,9 +34,9 @@ export default function ForgotPassword() {
           <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-4">
             <KeyRound className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-display font-bold mb-1">{sent ? "Enter Verification Code" : "Reset Password"}</h1>
+          <h1 className="text-2xl font-display font-bold mb-1">{sent ? "Email sent" : "Reset Password"}</h1>
           <p className="text-sm text-muted-foreground">
-            {sent ? `We sent a 6-digit code to ${email}` : "Enter your email to receive a reset code"}
+            {sent ? `We sent a password reset link to ${email}` : "Enter your email to receive a reset link"}
           </p>
         </div>
 
@@ -52,23 +52,18 @@ export default function ForgotPassword() {
                 </div>
               </div>
               <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition disabled:opacity-50">
-                {loading ? "Sending..." : "Send Reset Code"}
+                {loading ? "Sending..." : "Send Reset Link"}
               </button>
             </form>
           ) : (
-            <form onSubmit={handleVerify} className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">6-Digit Code</label>
-                <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000"
-                  className="w-full h-14 px-4 rounded-xl bg-secondary border border-border text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/50" maxLength={6} />
-              </div>
-              <button type="submit" className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition">
-                Verify Code
-              </button>
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Click the link in the email to reset your password. The link will expire in 1 hour.
+              </p>
               <button type="button" onClick={() => setSent(false)} className="w-full text-sm text-muted-foreground hover:text-foreground transition">
-                Didn't receive a code? Resend
+                Didn't receive an email? Try again
               </button>
-            </form>
+            </div>
           )}
         </div>
 
