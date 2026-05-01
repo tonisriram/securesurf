@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
       aiFailed = true;
     }
 
-    // Merge
+    // Merge: Safe Browsing is authoritative — if Google lists it, force danger.
     let finalScore = heuristic.score;
     let category = "safe";
     let explanation = "No major threats detected";
@@ -183,14 +183,41 @@ Deno.serve(async (req) => {
       else if (finalScore > 30) category = "suspicious";
     }
 
+    if (safeBrowsing.listed) {
+      finalScore = 100;
+      const threatMap: Record<string, string> = {
+        MALWARE: "malware",
+        SOCIAL_ENGINEERING: "phishing",
+        UNWANTED_SOFTWARE: "suspicious",
+        POTENTIALLY_HARMFUL_APPLICATION: "malware",
+      };
+      category = threatMap[safeBrowsing.threats[0]] ?? "malware";
+      explanation = `Google Safe Browsing has flagged this URL as ${safeBrowsing.threats
+        .map((t) => t.toLowerCase().replace(/_/g, " "))
+        .join(", ")}. ${explanation}`;
+      signals = [
+        ...new Set([
+          ...signals,
+          ...safeBrowsing.threats.map((t) => `Safe Browsing: ${t}`),
+        ]),
+      ];
+    }
+
+    const status = finalScore < 30 ? "safe" : finalScore < 60 ? "warning" : "danger";
+
     const result = {
       url,
       score: Math.min(100, finalScore),
-      status: finalScore < 30 ? "safe" : finalScore < 60 ? "warning" : "danger",
+      status,
       category,
       explanation,
       signals,
       ai_used: !aiFailed,
+      safe_browsing: {
+        checked: !safeBrowsingFailed,
+        listed: safeBrowsing.listed,
+        threats: safeBrowsing.threats,
+      },
       timestamp: new Date().toISOString(),
     };
 
