@@ -13,12 +13,10 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
         setState("no-auth");
         return;
       }
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", auth.user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: auth.user.id,
+        _role: "admin",
+      });
       if (error || !data) {
         setState("no-admin");
         return;
