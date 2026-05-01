@@ -47,7 +47,7 @@ export default function Logs() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
       channel = supabase
-        .channel("scan_history_changes")
+        .channel(`scan_history:${auth.user.id}`)
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "scan_history", filter: `user_id=eq.${auth.user.id}` },
