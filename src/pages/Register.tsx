@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Shield, Eye, EyeOff, Mail, Lock, User, Apple } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 function getPasswordStrength(pw: string) {
   let score = 0;
@@ -24,15 +25,36 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const strength = useMemo(() => getPasswordStrength(password), [password]);
+
+  const handleGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/scanner` },
+    });
+    if (error) toast({ title: "Sign-up failed", description: error.message, variant: "destructive" });
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    toast({ title: "Demo Mode", description: "Registration requires Lovable Cloud. This is a UI preview." });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/scanner`,
+        data: { full_name: name },
+      },
+    });
     setLoading(false);
+    if (error) {
+      toast({ title: "Sign-up failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Check your email", description: "Confirm your address to finish signing up." });
+    navigate("/login");
   };
 
   return (
