@@ -41,6 +41,35 @@ export default function Logs() {
 
   useEffect(() => {
     load();
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return;
+      channel = supabase
+        .channel("scan_history_changes")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "scan_history", filter: `user_id=eq.${auth.user.id}` },
+          (payload) => {
+            const row = payload.new as LogRow;
+            setLogs((prev) => (prev.some((l) => l.id === row.id) ? prev : [row, ...prev]));
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "scan_history" },
+          (payload) => {
+            const oldRow = payload.old as { id: string };
+            setLogs((prev) => prev.filter((l) => l.id !== oldRow.id));
+          }
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   const filtered = logs.filter((log) => {
