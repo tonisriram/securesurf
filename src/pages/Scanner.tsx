@@ -18,6 +18,7 @@ export default function Scanner() {
   const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [meta, setMeta] = useState<{ confidence?: number; cached?: boolean; breakdown?: Array<{ source: string; score: number; weight: number; available: boolean; contribution: number }> } | null>(null);
 
   const handleScan = async (targetUrl?: string) => {
     const scanUrl = targetUrl || url;
