@@ -217,6 +217,18 @@ Deno.serve(async (req) => {
       else if (finalScore > 30) category = "suspicious";
     }
 
+    // VirusTotal merge: 2+ malicious engines is authoritative
+    const vtFlagged = virusTotal.malicious + virusTotal.suspicious;
+    if (vtFlagged >= 2) {
+      finalScore = 100;
+      category = virusTotal.malicious > 0 ? "malware" : "suspicious";
+      explanation = `VirusTotal: ${virusTotal.malicious} malicious / ${virusTotal.suspicious} suspicious detections across security engines. ${explanation}`;
+      signals = [...new Set([...signals, ...virusTotal.engines.map((e) => `VT: ${e}`)])];
+    } else if (vtFlagged === 1) {
+      finalScore = Math.max(finalScore, 55);
+      signals = [...new Set([...signals, ...virusTotal.engines.map((e) => `VT: ${e}`)])];
+    }
+
     if (safeBrowsing.listed) {
       finalScore = 100;
       const threatMap: Record<string, string> = {
@@ -252,6 +264,7 @@ Deno.serve(async (req) => {
         listed: safeBrowsing.listed,
         threats: safeBrowsing.threats,
       },
+      virus_total: virusTotal,
       timestamp: new Date().toISOString(),
     };
 
