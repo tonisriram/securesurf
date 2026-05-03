@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      scan_cache: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          result: Json
+          url: string
+          url_hash: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          result: Json
+          url: string
+          url_hash: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          result?: Json
+          url?: string
+          url_hash?: string
+        }
+        Relationships: []
+      }
       scan_history: {
         Row: {
           ai_used: boolean | null
