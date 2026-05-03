@@ -117,6 +117,40 @@ Deno.serve(async (req) => {
       safeBrowsingFailed = true;
     }
 
+    // VirusTotal lookup (multi-engine threat intel)
+    let virusTotal: { checked: boolean; found: boolean; malicious: number; suspicious: number; harmless: number; undetected: number; engines: string[] } = {
+      checked: false, found: false, malicious: 0, suspicious: 0, harmless: 0, undetected: 0, engines: [],
+    };
+    try {
+      const VT_KEY = Deno.env.get("VIRUSTOTAL_API_KEY");
+      if (!VT_KEY) throw new Error("Missing VirusTotal key");
+      // VirusTotal URL id = base64url(url) without padding
+      const urlId = btoa(url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const vtRes = await fetch(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
+        headers: { "x-apikey": VT_KEY },
+      });
+      virusTotal.checked = true;
+      if (vtRes.ok) {
+        const vtData = await vtRes.json();
+        const stats = vtData?.data?.attributes?.last_analysis_stats ?? {};
+        const results = vtData?.data?.attributes?.last_analysis_results ?? {};
+        virusTotal.found = true;
+        virusTotal.malicious = stats.malicious ?? 0;
+        virusTotal.suspicious = stats.suspicious ?? 0;
+        virusTotal.harmless = stats.harmless ?? 0;
+        virusTotal.undetected = stats.undetected ?? 0;
+        virusTotal.engines = Object.entries(results)
+          .filter(([, r]: any) => r?.category === "malicious" || r?.category === "suspicious")
+          .map(([name]) => name)
+          .slice(0, 10);
+      } else if (vtRes.status !== 404) {
+        const errText = await vtRes.text();
+        console.error("VirusTotal error", vtRes.status, errText);
+      }
+    } catch (err) {
+      console.log("VirusTotal failed:", err);
+    }
+
     // Gemini AI call
     let aiResult: { score: number; category: string; explanation: string; signals: string[] } | null = null;
     let aiFailed = false;
