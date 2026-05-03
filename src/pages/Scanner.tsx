@@ -18,6 +18,7 @@ export default function Scanner() {
   const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [meta, setMeta] = useState<{ confidence?: number; cached?: boolean; breakdown?: Array<{ source: string; score: number; weight: number; available: boolean; contribution: number }> } | null>(null);
 
   const handleScan = async (targetUrl?: string) => {
     const scanUrl = targetUrl || url;
@@ -62,6 +63,7 @@ export default function Scanner() {
         ],
       };
       setResult(merged);
+      setMeta({ confidence: data.confidence, cached: data.cached, breakdown: data.breakdown });
 
       // Persist to scan_history (anon = null user_id)
       try {
@@ -184,6 +186,46 @@ export default function Scanner() {
               <p className="text-sm text-muted-foreground leading-relaxed mb-3">{result.aiExplanation}</p>
               <p className="text-sm font-semibold">{result.aiRecommendation}</p>
             </div>
+
+            {/* Confidence + Evidence Breakdown */}
+            {meta?.breakdown && (
+              <div className="p-6 rounded-2xl bg-card border border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Server className="w-5 h-5 text-primary" />
+                    <h3 className="font-display font-semibold">Evidence Breakdown</h3>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs">
+                    {meta.cached && (
+                      <span className="px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/20">Cached</span>
+                    )}
+                    <span className="text-muted-foreground">
+                      Confidence: <span className="font-semibold text-foreground">{meta.confidence ?? 0}%</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {meta.breakdown.map((b) => (
+                    <div key={b.source}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className={b.available ? "text-foreground" : "text-muted-foreground line-through"}>
+                          {b.source} <span className="text-muted-foreground">· weight {Math.round(b.weight * 100)}%</span>
+                        </span>
+                        <span className="font-mono text-muted-foreground">
+                          {b.available ? `${b.score}/100` : "unavailable"}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className={`h-full ${b.score >= 60 ? "bg-danger" : b.score >= 30 ? "bg-warning" : "bg-safe"}`}
+                          style={{ width: `${b.available ? b.score : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Score Breakdown */}
             <ScoreBreakdown result={result} />
