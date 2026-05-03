@@ -63,6 +63,7 @@ export default function Scanner() {
         ],
       };
       setResult(merged);
+      setMeta({ confidence: data.confidence, cached: data.cached, breakdown: data.breakdown });
 
       // Persist to scan_history (anon = null user_id)
       try {
