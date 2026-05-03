@@ -237,9 +237,29 @@ export default function Scanner() {
                       </div>
                     );
                   })()}
+                  {(() => {
+                    const vt = (result as any).virus_total as
+                      | { checked: boolean; found: boolean; malicious: number; suspicious: number; harmless: number }
+                      | undefined;
+                    const flagged = !!vt && (vt.malicious + vt.suspicious) > 0;
+                    const detail = !vt || !vt.checked
+                      ? "Unavailable"
+                      : !vt.found
+                      ? "Not in database"
+                      : flagged
+                      ? `${vt.malicious} malicious / ${vt.suspicious} suspicious`
+                      : "Clean";
+                    return (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">VirusTotal</span>
+                        <span className={`text-xs ${flagged ? "text-danger" : vt?.checked && vt?.found ? "text-safe" : "text-muted-foreground"}`}>
+                          {detail}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   {[
                     { name: "PhishTank", detail: result.apiIntel.phishTank.detail, flagged: result.apiIntel.phishTank.listed },
-                    { name: "VirusTotal", detail: result.apiIntel.virusTotal.detail, flagged: result.apiIntel.virusTotal.positives > 3 },
                     { name: "MalwareBazaar", detail: result.apiIntel.malwareBazaar.detail, flagged: result.apiIntel.malwareBazaar.listed },
                   ].map((api) => (
                     <div key={api.name} className="flex items-center justify-between text-sm">
